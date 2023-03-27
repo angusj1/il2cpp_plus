@@ -42,6 +42,12 @@ void* il2cpp::vm::MetadataLoader::LoadMetadataFile(const char* fileName)
         return NULL;
     }
 
+    /* 1 start */
+    int64_t length = 0;
+    int error2 = 0;
+    length = os::File::GetLength(handle, &error2);
+    /* 1 end */
+
     void* fileBuffer = utils::MemoryMappedFile::Map(handle);
 
     os::File::Close(handle, &error);
@@ -52,7 +58,16 @@ void* il2cpp::vm::MetadataLoader::LoadMetadataFile(const char* fileName)
         return NULL;
     }
 
-    return fileBuffer;
+    // return fileBuffer;
+    /* 2 start */
+    char* data = (char*)malloc(length);
+    memcpy(data, fileBuffer, length); //拷贝
+                                      //解密返回
+    void* result = utils::MemoryMappedFile::DecryptFile(data, length);
+
+    return (void*)result; //返回解密的结果
+
+    /* 2 end */
 #endif
 }
 
