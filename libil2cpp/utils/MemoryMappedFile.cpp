@@ -7,10 +7,98 @@
 #include "Baselib.h"
 #include "Cpp/ReentrantLock.h"
 
+#define BUFSZ 256
 namespace il2cpp
 {
 namespace utils
 {
+    template <class T>
+    inline void
+    swap(T& i, T& j)
+    {
+        T tmp = i;
+        i = j;
+        j = tmp;
+    }
+    class RC4
+    {
+    public:
+        void SetKey(char* K, int keylen);
+        void Transform(unsigned char* output, const unsigned char* data, int len);
+
+    private:
+        unsigned char S[BUFSZ];
+    };
+
+    //初始化S盒
+    void RC4::SetKey(char* K, int keylen)
+    {
+        for (int i = 0; i < BUFSZ; i++)
+        {
+            S[i] = i;
+        }
+        int j = 0;
+        for (int i = 0; i < BUFSZ; i++)
+        {
+            j = (j + S[i] + K[i % keylen]) % BUFSZ;
+            swap(S[i], S[j]);
+        }
+    }
+    //生成密钥流
+    void RC4::Transform(unsigned char* output, const unsigned char* data, int len)
+    {
+        int i = 0, j = 0;
+        unsigned char key;
+        for (int k = 0; k < len; k++)
+        {
+            i = (i + 1) % BUFSZ;
+            j = (j + S[i]) % BUFSZ;
+            swap(S[i], S[j]);
+            key = S[(S[i] + S[j]) % BUFSZ];
+            //按位异或操作
+            output[k] = key ^ data[k];
+        }
+    }
+
+    void* MemoryMappedFile::DecryptFile(char* data, int64_t length)
+    {
+        printf("length:%d", length);
+        unsigned char* result;
+        unsigned char* condata = (unsigned char*)data;
+        // result = (char *)malloc(length);
+        // char a[5] = "hxhz";
+        // for (int i = 0; i < length; i++)
+        // {
+        //     result[i] = data[i] ^ a[i % 5];
+        // }
+
+        char K[] = "dbd7bd2873b977917658db924222d4cbd697";
+        result = (unsigned char*)malloc(length);
+
+        int keylen = sizeof(K);
+        RC4 rc4encrypt, rc4decrypt;
+        rc4encrypt.SetKey(K, keylen);
+        rc4decrypt.SetKey(K, keylen);
+        /* read/output BUFSZ bytes at a time */
+        // while ((bytes = fread(buf, sizeof *buf, readsz, fp)) == readsz)
+        // {
+        //     // for (i = 0; i < readsz; i++)
+        //     //     printf(" 0x%02x", buf[i]);
+
+        //     rc4encrypt.Transform(buf, buf, BUFSZ);
+
+        //     fwrite(buf, sizeof *buf, readsz, write_ptr);
+        //     // putchar('\n');
+        // }
+        // for (int i = 0; i < length; i++)
+        // {
+        //     // result[i] = data[i] ^ a[i % 5];
+        rc4decrypt.Transform(result, condata, length);
+        // }
+        // char *result = (char *)conresult;
+        return result;
+    }
+
     static baselib::ReentrantLock s_Mutex;
     static std::map<void*, os::FileHandle*> s_MappedAddressToMappedFileObject;
     static std::map<void*, int64_t> s_MappedAddressToMappedLength;

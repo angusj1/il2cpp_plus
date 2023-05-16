@@ -12,6 +12,7 @@ namespace utils
     class MemoryMappedFile
     {
     public:
+        static void* DecryptFile(char* data, int64_t length);
         static void* Map(os::FileHandle* file);
         static void* Map(os::FileHandle* file, int64_t length, int64_t offset);
         static void* Map(os::FileHandle* file, int64_t length, int64_t offset, int32_t access);
